@@ -6,6 +6,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Surface, ActivityIndicator, Chip } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-chart-kit';
@@ -63,7 +64,7 @@ const AnalyticsScreen = () => {
   const yearOptions = getYearOptions();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <Surface style={styles.header} elevation={0}>
         <Text variant="titleLarge" style={styles.headerTitle}>
@@ -212,7 +213,7 @@ const AnalyticsScreen = () => {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
   yearSelector: {
     paddingHorizontal: 16,

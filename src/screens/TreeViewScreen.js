@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Surface, ActivityIndicator } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
@@ -160,7 +161,7 @@ const TreeViewScreen = () => {
   const groupKeys = Object.keys(grouped);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <Surface style={styles.header} elevation={0}>
         <Text variant="titleLarge" style={styles.headerTitle}>
@@ -215,7 +216,7 @@ const TreeViewScreen = () => {
           ))
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
   monthTotalCard: {
     marginHorizontal: 16,

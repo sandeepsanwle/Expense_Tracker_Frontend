@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Text,
   TextInput,
@@ -69,98 +70,100 @@ const AddExpenseScreen = ({ navigation, route }) => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}>
-      {/* Header */}
-      <Surface style={styles.header} elevation={0}>
-        <IconButton
-          icon="arrow-left"
-          iconColor={COLORS.text}
-          size={24}
-          onPress={() => navigation.goBack()}
-        />
-        <Text variant="titleLarge" style={styles.headerTitle}>
-          {isEdit ? 'Edit Expense' : 'Add Expense'}
-        </Text>
-        <View style={{ width: 48 }} />
-      </Surface>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
-        <Surface style={styles.formCard} elevation={2}>
-          <View style={styles.iconHeader}>
-            <Surface style={styles.iconCircle} elevation={3}>
-              <IconButton
-                icon={isEdit ? 'pencil' : 'plus-circle'}
-                iconColor={COLORS.primary}
-                size={32}
-              />
-            </Surface>
-          </View>
-
-          <TextInput
-            label="Expense Title"
-            value={title}
-            onChangeText={setTitle}
-            mode="outlined"
-            placeholder="e.g., Groceries, Rent, Food"
-            left={<TextInput.Icon icon="tag" />}
-            style={styles.input}
-            outlineColor={COLORS.border}
-            activeOutlineColor={COLORS.primary}
-            maxLength={100}
-          />
-
-          <TextInput
-            label="Amount (₹)"
-            value={amount}
-            onChangeText={setAmount}
-            mode="outlined"
-            keyboardType="numeric"
-            placeholder="e.g., 500"
-            left={<TextInput.Icon icon="currency-inr" />}
-            style={styles.input}
-            outlineColor={COLORS.border}
-            activeOutlineColor={COLORS.primary}
-          />
-
-          <View style={styles.infoRow}>
-            <IconButton icon="calendar" iconColor={COLORS.textSecondary} size={18} />
-            <Text variant="bodyMedium" style={styles.infoText}>
-              {isEdit
-                ? `Created: ${new Date(existingExpense.date).toLocaleDateString()}`
-                : `Date: ${new Date().toLocaleDateString()}`}
-            </Text>
-          </View>
-
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            loading={loading}
-            disabled={loading}
-            style={styles.submitButton}
-            buttonColor={COLORS.primary}
-            contentStyle={styles.submitButtonContent}
-            icon={isEdit ? 'check' : 'plus'}>
-            {isEdit ? 'Update Expense' : 'Add Expense'}
-          </Button>
-
-          <Button
-            mode="outlined"
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <Surface style={styles.header} elevation={0}>
+          <IconButton
+            icon="arrow-left"
+            iconColor={COLORS.text}
+            size={24}
             onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-            textColor={COLORS.textSecondary}>
-            Cancel
-          </Button>
+          />
+          <Text variant="titleLarge" style={styles.headerTitle}>
+            {isEdit ? 'Edit Expense' : 'Add Expense'}
+          </Text>
+          <View style={{ width: 48 }} />
         </Surface>
-      </ScrollView>
 
-      <Snackbar
-        visible={!!error}
-        onDismiss={() => setError('')}
-        duration={3000}
-        style={styles.snackbar}>
-        {error}
-      </Snackbar>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled">
+          <Surface style={styles.formCard} elevation={2}>
+            <View style={styles.iconHeader}>
+              <Surface style={styles.iconCircle} elevation={3}>
+                <IconButton
+                  icon={isEdit ? 'pencil' : 'plus-circle'}
+                  iconColor={COLORS.primary}
+                  size={32}
+                />
+              </Surface>
+            </View>
+
+            <TextInput
+              label="Expense Title"
+              value={title}
+              onChangeText={setTitle}
+              mode="outlined"
+              placeholder="e.g., Groceries, Rent, Food"
+              left={<TextInput.Icon icon="tag" />}
+              style={styles.input}
+              outlineColor={COLORS.border}
+              activeOutlineColor={COLORS.primary}
+              maxLength={100}
+            />
+
+            <TextInput
+              label="Amount (₹)"
+              value={amount}
+              onChangeText={setAmount}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="e.g., 500"
+              left={<TextInput.Icon icon="currency-inr" />}
+              style={styles.input}
+              outlineColor={COLORS.border}
+              activeOutlineColor={COLORS.primary}
+            />
+
+            <View style={styles.infoRow}>
+              <IconButton icon="calendar" iconColor={COLORS.textSecondary} size={18} />
+              <Text variant="bodyMedium" style={styles.infoText}>
+                {isEdit
+                  ? `Created: ${new Date(existingExpense.date).toLocaleDateString()}`
+                  : `Date: ${new Date().toLocaleDateString()}`}
+              </Text>
+            </View>
+
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              loading={loading}
+              disabled={loading}
+              style={styles.submitButton}
+              buttonColor={COLORS.primary}
+              contentStyle={styles.submitButtonContent}
+              icon={isEdit ? 'check' : 'plus'}>
+              {isEdit ? 'Update Expense' : 'Add Expense'}
+            </Button>
+
+            <Button
+              mode="outlined"
+              onPress={() => navigation.goBack()}
+              style={styles.cancelButton}
+              textColor={COLORS.textSecondary}>
+              Cancel
+            </Button>
+          </Surface>
+        </ScrollView>
+
+        <Snackbar
+          visible={!!error}
+          onDismiss={() => setError('')}
+          duration={3000}
+          style={styles.snackbar}>
+          {error}
+        </Snackbar>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
@@ -169,6 +172,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  safeArea: {
+    flex: 1,
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
@@ -185,6 +192,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
+    paddingBottom: 32,
   },
   formCard: {
     backgroundColor: COLORS.surface,

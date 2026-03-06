@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Text,
   FAB,
@@ -148,15 +149,15 @@ const HomeScreen = ({ navigation }) => {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.centered}>
+      <SafeAreaView style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Loading expenses...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* App Bar */}
       <Surface style={styles.appBar} elevation={0}>
         <View>
@@ -213,6 +214,8 @@ const HomeScreen = ({ navigation }) => {
           />
         }
         showsVerticalScrollIndicator={false}
+        contentInset={{ bottom: 24 }}
+        contentInsetAdjustmentBehavior="automatic"
       />
 
       <FAB
@@ -256,7 +259,7 @@ const HomeScreen = ({ navigation }) => {
         style={styles.snackbar}>
         {error}
       </Snackbar>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -338,12 +341,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 140,
   },
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 24,
+    bottom: 40,
     backgroundColor: COLORS.primary,
     borderRadius: 16,
   },
