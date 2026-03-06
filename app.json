@@ -6,12 +6,17 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/app_logo.png",
     "splash": {
       "backgroundColor": "#6C63FF",
       "resizeMode": "contain"
     },
     "android": {
-      "package": "com.expensetracker.app"
+      "package": "com.expensetracker.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app_logo.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "ios": {
       "supportsTablet": true,
