@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Expense Tracker",
+    "slug": "expense-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#6C63FF",
+      "resizeMode": "contain"
+    },
+    "android": {
+      "package": "com.expensetracker.app"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.expensetracker.app"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c550906d-3dee-4b07-8089-2f822e345ba4"
+      }
+    }
+  }
+}

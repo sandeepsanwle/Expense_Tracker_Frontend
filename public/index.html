@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#6C63FF" />
+  <title>Expense Tracker</title>
+  <!-- Load MaterialCommunityIcons font for react-native-vector-icons -->
+  <style>
+    /* Prevent web defaults from interfering with RN layout */
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F8F9FE;
+    }
+    #root {
+      display: flex;
+      flex-direction: column;
+    }
+    /* Suppress RNW input outline */
+    input:focus, textarea:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
