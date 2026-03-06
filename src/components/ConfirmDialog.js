@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { Portal, Dialog, Text, Button } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Portal, Surface, Text, Button } from 'react-native-paper';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { COLORS } from '../utils/constants';
 
@@ -19,58 +19,68 @@ const ConfirmDialog = ({
 }) => {
   return (
     <Portal>
-      <Dialog
-        visible={visible}
-        onDismiss={onDismiss}
-        style={styles.dialog}>
-        <Dialog.Content style={styles.content}>
-          <Icon name={icon} size={52} color={iconColor} style={styles.icon} />
-          <Text variant="titleLarge" style={styles.title}>
-            {title}
-          </Text>
-          <Text variant="bodyMedium" style={styles.message}>
-            {message}
-          </Text>
-        </Dialog.Content>
-        <Dialog.Actions style={styles.actions}>
-          <Button
-            mode="outlined"
-            onPress={onDismiss}
-            style={styles.cancelBtn}
-            textColor={COLORS.textSecondary}
-            contentStyle={styles.btnContent}>
-            {cancelLabel}
-          </Button>
-          <Button
-            mode="contained"
-            onPress={onConfirm}
-            loading={loading}
-            disabled={loading}
-            buttonColor={confirmColor}
-            style={styles.confirmBtn}
-            contentStyle={styles.btnContent}>
-            {confirmLabel}
-          </Button>
-        </Dialog.Actions>
-      </Dialog>
+      {visible && (
+        <View style={styles.overlay}>
+          <Surface style={styles.dialog} elevation={4}>
+            <View style={styles.content}>
+              <Icon name={icon} size={36} color={iconColor} style={styles.icon} />
+              <Text variant="titleMedium" style={styles.title}>
+                {title}
+              </Text>
+              <Text variant="bodySmall" style={styles.message}>
+                {message}
+              </Text>
+            </View>
+            <View style={styles.actions}>
+              <Button
+                mode="outlined"
+                onPress={onDismiss}
+                style={styles.cancelBtn}
+                textColor={COLORS.textSecondary}
+                contentStyle={styles.btnContent}>
+                {cancelLabel}
+              </Button>
+              <Button
+                mode="contained"
+                onPress={onConfirm}
+                loading={loading}
+                disabled={loading}
+                buttonColor={confirmColor}
+                style={styles.confirmBtn}
+                contentStyle={styles.btnContent}>
+                {confirmLabel}
+              </Button>
+            </View>
+          </Surface>
+        </View>
+      )}
     </Portal>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
   dialog: {
-    borderRadius: 24,
+    borderRadius: 18,
     backgroundColor: COLORS.surface,
-    maxWidth: 400,
-    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 340,
   },
   content: {
-    alignItems: 'center',
-    paddingTop: 28,
+    alignItems: 'flex-start',
+    paddingTop: 16,
     paddingBottom: 8,
+    paddingHorizontal: 16,
   },
   icon: {
-    marginBottom: 16,
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   title: {
     fontWeight: '700',
@@ -80,27 +90,27 @@ const styles = StyleSheet.create({
   },
   message: {
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 22,
   },
   actions: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 12,
-    justifyContent: 'center',
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   cancelBtn: {
-    flex: 1,
     borderRadius: 12,
     borderColor: COLORS.border,
+    marginRight: 8,
   },
   confirmBtn: {
-    flex: 1,
     borderRadius: 12,
   },
   btnContent: {
-    paddingVertical: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
   },
 });
 
