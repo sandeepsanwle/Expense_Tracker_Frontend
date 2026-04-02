@@ -1,13 +1,16 @@
 import { Platform } from 'react-native';
 
-const API_URLS = {
-  web: 'https://expense-tracker-backend-1a3f.onrender.com/api',
-  android: 'https://expense-tracker-backend-1a3f.onrender.com/api',
-  ios: 'https://expense-tracker-backend-1a3f.onrender.com/api',
-};
+//render api url
+// const API_URLS = {
+//   web: 'https://expense-tracker-backend-1a3f.onrender.com/api',
+//   android: 'https://expense-tracker-backend-1a3f.onrender.com/api',
+//   ios: 'https://expense-tracker-backend-1a3f.onrender.com/api',
+// };
 
+//railway api 
+const API_URL = 'https://expensetrackerbackend-production-2480.up.railway.app/api'
 
-export const BASE_URL = API_URLS[Platform.OS] || API_URLS.android;
+export const BASE_URL = API_URL;
 
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',

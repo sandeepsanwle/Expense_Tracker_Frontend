@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "icon": "./assets/app_logo.png",
+    "icon": "./assets/logo_2.png",
     "splash": {
       "backgroundColor": "#6C63FF",
       "resizeMode": "contain"
