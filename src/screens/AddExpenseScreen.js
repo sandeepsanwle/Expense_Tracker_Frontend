@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -14,23 +15,54 @@ import {
   Surface,
   IconButton,
   Snackbar,
+  Menu,
 } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { createExpense, updateExpense } from '../services/expenseService';
+import { getGroups } from '../services/groupService';
 import { COLORS } from '../utils/constants';
 
 const AddExpenseScreen = ({ navigation, route }) => {
   const isEdit = route.params?.isEdit || false;
   const existingExpense = route.params?.expense || null;
+  const initialBudgetName = route.params?.initialBudgetName ?? null;
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+
+  const loadGroups = useCallback(async () => {
+    try {
+      const res = await getGroups();
+      if (res.success) setGroups(res.data);
+    } catch {
+      /* optional */
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadGroups();
+      if (!isEdit) {
+        setTitle('');
+        setAmount('');
+        const bid = route.params?.initialBudgetId;
+        setSelectedGroupId(bid ? String(bid) : null);
+      }
+    }, [loadGroups, isEdit, route.params?.initialBudgetId]),
+  );
 
   useEffect(() => {
     if (isEdit && existingExpense) {
       setTitle(existingExpense.title);
       setAmount(existingExpense.amount.toString());
+      const gid = existingExpense.group?._id || existingExpense.group;
+      setSelectedGroupId(gid ? String(gid) : null);
     }
   }, [isEdit, existingExpense]);
 
@@ -52,9 +84,15 @@ const AddExpenseScreen = ({ navigation, route }) => {
         await updateExpense(existingExpense._id, {
           title: title.trim(),
           amount: Number(amount),
+          group: selectedGroupId || null,
         });
       } else {
-        await createExpense(title.trim(), Number(amount));
+        await createExpense(
+          title.trim(),
+          Number(amount),
+          undefined,
+          selectedGroupId || undefined,
+        );
       }
       navigation.goBack();
     } catch (err) {
@@ -124,6 +162,55 @@ const AddExpenseScreen = ({ navigation, route }) => {
               outlineColor={COLORS.border}
               activeOutlineColor={COLORS.primary}
             />
+
+            <Text variant="labelLarge" style={styles.groupLabel}>
+              Assign to budget
+            </Text>
+            <Menu
+              visible={groupMenuOpen}
+              onDismiss={() => setGroupMenuOpen(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.groupSelector}
+                  onPress={() => setGroupMenuOpen(true)}
+                  activeOpacity={0.7}>
+                  <Icon name="tag-outline" size={22} color={COLORS.primary} />
+                  <View style={styles.groupSelectorText}>
+                    <Text variant="bodyLarge" style={styles.groupSelectorTitle}>
+                      {selectedGroupId
+                        ? groups.find((g) => String(g._id) === String(selectedGroupId))
+                            ?.name ||
+                          initialBudgetName ||
+                          'Selected budget'
+                        : 'None'}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.groupSelectorHint}>
+                      Tap to change
+                    </Text>
+                  </View>
+                  <Icon name="chevron-down" size={22} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              }>
+              <Menu.Item
+                title="No budget"
+                leadingIcon="tag-off-outline"
+                onPress={() => {
+                  setSelectedGroupId(null);
+                  setGroupMenuOpen(false);
+                }}
+              />
+              {groups.map((g) => (
+                <Menu.Item
+                  key={g._id}
+                  title={g.name}
+                  leadingIcon="tag"
+                  onPress={() => {
+                    setSelectedGroupId(String(g._id));
+                    setGroupMenuOpen(false);
+                  }}
+                />
+              ))}
+            </Menu>
 
             <View style={styles.infoRow}>
               <IconButton icon="calendar" iconColor={COLORS.textSecondary} size={18} />
@@ -214,6 +301,32 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
     backgroundColor: COLORS.surface,
+  },
+  groupLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  groupSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  groupSelectorText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  groupSelectorTitle: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  groupSelectorHint: {
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   infoRow: {
     flexDirection: 'row',

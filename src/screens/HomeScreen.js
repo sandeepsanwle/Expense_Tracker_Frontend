@@ -5,6 +5,8 @@ import {
   FlatList,
   RefreshControl,
   Platform,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -20,14 +22,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { getExpenses, deleteExpense } from '../services/expenseService';
+import { getGroups } from '../services/groupService';
 import { COLORS, MONTHS } from '../utils/constants';
-import {
-  formatCurrency,
-  formatDateShort,
-  getCurrentMonth,
-  getCurrentYear,
-  getYearOptions,
-} from '../utils/helpers';
+import { formatCurrency, getCurrentMonth, getCurrentYear } from '../utils/helpers';
 import ExpenseItem from '../components/ExpenseItem';
 import MonthFilter from '../components/MonthFilter';
 import EmptyState from '../components/EmptyState';
@@ -46,27 +43,50 @@ const HomeScreen = ({ navigation }) => {
   const [deleteDialog, setDeleteDialog] = useState({ visible: false, id: null, title: '' });
   const [logoutDialog, setLogoutDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [groupFilter, setGroupFilter] = useState('all');
 
-  const fetchExpenses = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const data = await getExpenses(selectedMonth, selectedYear);
-      if (data.success) {
-        setExpenses(data.data);
-        setTotal(data.total);
+      const gRes = await getGroups();
+      const list = gRes.success ? gRes.data || [] : [];
+      setGroups(list);
+
+      let effectiveFilter = groupFilter;
+      if (
+        effectiveFilter !== 'all' &&
+        effectiveFilter !== 'none' &&
+        !list.some((g) => String(g._id) === String(effectiveFilter))
+      ) {
+        effectiveFilter = 'all';
+        setGroupFilter('all');
       }
-    } catch (err) {
+
+      const groupQueryParam =
+        effectiveFilter === 'all'
+          ? undefined
+          : effectiveFilter === 'none'
+            ? 'none'
+            : effectiveFilter;
+
+      const eRes = await getExpenses(selectedMonth, selectedYear, groupQueryParam);
+      if (eRes.success) {
+        setExpenses(eRes.data);
+        setTotal(eRes.total);
+      }
+    } catch {
       setError('Failed to load expenses');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, groupFilter]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      fetchExpenses();
-    }, [fetchExpenses]),
+      loadData();
+    }, [loadData]),
   );
 
   const handleDelete = (id, title) => {
@@ -78,7 +98,7 @@ const HomeScreen = ({ navigation }) => {
     try {
       await deleteExpense(deleteDialog.id);
       setDeleteDialog({ visible: false, id: null, title: '' });
-      fetchExpenses();
+      loadData();
     } catch (err) {
       setError('Failed to delete expense');
     } finally {
@@ -92,7 +112,7 @@ const HomeScreen = ({ navigation }) => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchExpenses();
+    loadData();
   };
 
   const handleLogout = () => {
@@ -119,6 +139,16 @@ const HomeScreen = ({ navigation }) => {
             </Text>
             <Text variant="bodySmall" style={styles.totalSubtext}>
               {expenses.length} expense{expenses.length !== 1 ? 's' : ''} this month
+              {groupFilter !== 'all' && (
+                <Text style={styles.filterHint}>
+                  {' '}
+                  ·{' '}
+                  {groupFilter === 'none'
+                    ? 'No budget only'
+                    : groups.find((g) => String(g._id) === String(groupFilter))?.name ||
+                      'Filtered'}
+                </Text>
+              )}
             </Text>
           </View>
           <View style={styles.totalIconContainer}>
@@ -134,6 +164,59 @@ const HomeScreen = ({ navigation }) => {
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
       />
+
+      {groups.length > 0 && (
+        <View style={styles.groupFilterBlock}>
+          <Text variant="labelLarge" style={styles.groupFilterTitle}>
+            Budget
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.groupChipRow}>
+            <TouchableOpacity
+              style={[styles.groupChip, groupFilter === 'all' && styles.groupChipActive]}
+              onPress={() => setGroupFilter('all')}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.groupChipText,
+                  groupFilter === 'all' && styles.groupChipTextActive,
+                ]}>
+                All
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.groupChip, groupFilter === 'none' && styles.groupChipActive]}
+              onPress={() => setGroupFilter('none')}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.groupChipText,
+                  groupFilter === 'none' && styles.groupChipTextActive,
+                ]}>
+                No budget
+              </Text>
+            </TouchableOpacity>
+            {groups.map((g) => {
+              const active = String(groupFilter) === String(g._id);
+              return (
+                <TouchableOpacity
+                  key={g._id}
+                  style={[styles.groupChip, active && styles.groupChipActive]}
+                  onPress={() => setGroupFilter(String(g._id))}
+                  activeOpacity={0.7}>
+                  <Text
+                    style={[styles.groupChipText, active && styles.groupChipTextActive]}
+                    numberOfLines={1}>
+                    {g.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Section Title */}
       <View style={styles.sectionHeader}>
@@ -194,6 +277,7 @@ const HomeScreen = ({ navigation }) => {
             expense={item}
             onEdit={() => handleEdit(item)}
             onDelete={() => handleDelete(item._id, item.title)}
+            showGroupTag={groupFilter === 'all' || groupFilter === 'none'}
           />
         )}
         ListHeaderComponent={renderHeader}
@@ -222,7 +306,14 @@ const HomeScreen = ({ navigation }) => {
         icon="plus"
         style={styles.fab}
         color="#FFFFFF"
-        onPress={() => navigation.navigate('AddExpense')}
+        onPress={() =>
+          navigation.navigate('AddExpense', {
+            initialBudgetId: undefined,
+            initialBudgetName: undefined,
+            expense: undefined,
+            isEdit: false,
+          })
+        }
       />
 
       <ConfirmDialog
@@ -321,6 +412,49 @@ const styles = StyleSheet.create({
   totalSubtext: {
     color: 'rgba(255,255,255,0.6)',
     marginTop: 4,
+  },
+  filterHint: {
+    color: 'rgba(255,255,255,0.95)',
+    fontWeight: '600',
+  },
+  groupFilterBlock: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  groupFilterTitle: {
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  groupChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  groupChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    maxWidth: 160,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  groupChipActive: {
+    backgroundColor: COLORS.primary,
+    elevation: 3,
+  },
+  groupChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  groupChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   totalIconContainer: {
     opacity: 0.8,

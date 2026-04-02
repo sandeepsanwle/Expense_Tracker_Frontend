@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
       if (storedUser) {
         setUser(storedUser);
       }
-    } catch (error) {
-      console.log('Auth check error:', error);
+    } catch {
+      /* stored auth missing or invalid */
     } finally {
       setLoading(false);
     }

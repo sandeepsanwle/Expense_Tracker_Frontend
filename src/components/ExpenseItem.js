@@ -4,7 +4,12 @@ import { Text, Surface, IconButton } from 'react-native-paper';
 import { COLORS } from '../utils/constants';
 import { formatCurrency, formatDateShort } from '../utils/helpers';
 
-const ExpenseItem = ({ expense, onEdit, onDelete }) => {
+const ExpenseItem = ({ expense, onEdit, onDelete, showGroupTag = false }) => {
+  const groupLabel =
+    expense.group && typeof expense.group === 'object'
+      ? expense.group.name
+      : null;
+
   return (
     <Surface style={styles.card} elevation={1}>
       <View style={styles.leftSection}>
@@ -17,9 +22,18 @@ const ExpenseItem = ({ expense, onEdit, onDelete }) => {
           <Text variant="titleSmall" style={styles.title} numberOfLines={1}>
             {expense.title}
           </Text>
-          <Text variant="bodySmall" style={styles.date}>
-            {formatDateShort(expense.date)}
-          </Text>
+          {showGroupTag && groupLabel ? (
+            <View style={styles.tagRow}>
+              <Text style={styles.groupTag}>{groupLabel}</Text>
+              <Text variant="bodySmall" style={styles.date}>
+                {formatDateShort(expense.date)}
+              </Text>
+            </View>
+          ) : (
+            <Text variant="bodySmall" style={styles.date}>
+              {formatDateShort(expense.date)}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -88,6 +102,23 @@ const styles = StyleSheet.create({
   date: {
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  groupTag: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
+    backgroundColor: 'rgba(108, 99, 255, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   rightSection: {
     alignItems: 'flex-end',

@@ -5,32 +5,46 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Surface, ActivityIndicator, Chip } from 'react-native-paper';
+import { Text, Surface, ActivityIndicator } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-chart-kit';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { getAnalytics } from '../services/expenseService';
+import { getGroups } from '../services/groupService';
 import { COLORS, MONTH_SHORT } from '../utils/constants';
 import { formatCurrency, getCurrentYear, getYearOptions } from '../utils/helpers';
 
 const screenWidth = Dimensions.get('window').width;
 
+const remainingColor = (n) => {
+  if (n < 0) return COLORS.error;
+  if (n === 0) return COLORS.warning;
+  return COLORS.success;
+};
+
 const AnalyticsScreen = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
 
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAnalytics(selectedYear);
-      if (data.success) {
-        setAnalyticsData(data);
-      }
-    } catch (err) {
-      console.log('Analytics fetch error:', err);
+      const [aRes, gRes] = await Promise.all([
+        getAnalytics(selectedYear),
+        getGroups(),
+      ]);
+      if (aRes.success) setAnalyticsData(aRes);
+      else setAnalyticsData(null);
+      if (gRes.success) setBudgets(gRes.data || []);
+      else setBudgets([]);
+    } catch {
+      setAnalyticsData(null);
+      setBudgets([]);
     } finally {
       setLoading(false);
     }
@@ -38,178 +52,241 @@ const AnalyticsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchAnalytics();
-    }, [fetchAnalytics]),
+      fetchAll();
+    }, [fetchAll]),
   );
+
+  const yearOptions = getYearOptions();
 
   const chartData = analyticsData
     ? {
         labels: MONTH_SHORT,
-        datasets: [
-          {
-            data: analyticsData.data.map((m) => m.total),
-          },
-        ],
+        datasets: [{ data: analyticsData.data.map((m) => m.total) }],
       }
     : null;
 
-  // Find highest spending month
-  const highestMonth = analyticsData
-    ? analyticsData.data.reduce(
-        (max, m) => (m.total > max.total ? m : max),
-        { total: 0, label: '-' },
-      )
+  const highestMonth = analyticsData?.data?.length
+    ? analyticsData.data.reduce((max, m) => (m.total > max.total ? m : max))
     : null;
 
-  const yearOptions = getYearOptions();
-
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Surface style={styles.header} elevation={0}>
         <Text variant="titleLarge" style={styles.headerTitle}>
           Analytics
         </Text>
-        <Text variant="bodySmall" style={styles.headerSubtitle}>
-          Monthly spending comparison
+        <Text variant="bodyMedium" style={styles.headerSubtitle}>
+          Spending by year and budget snapshots
         </Text>
       </Surface>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* Year Selector */}
-        <View style={styles.yearSelector}>
-          <Text variant="titleSmall" style={styles.yearLabel}>
-            Select Year
+        <View style={styles.section}>
+          <Text variant="labelLarge" style={styles.sectionLabel}>
+            Spending year
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.yearChips}>
-            {yearOptions.map((year) => (
-              <Chip
-                key={year}
-                selected={selectedYear === year}
-                onPress={() => setSelectedYear(year)}
-                style={[
-                  styles.yearChip,
-                  selectedYear === year && styles.yearChipActive,
-                ]}
-                textStyle={[
-                  styles.yearChipText,
-                  selectedYear === year && styles.yearChipTextActive,
-                ]}
-                showSelectedOverlay={false}>
-                {year}
-              </Chip>
-            ))}
+            contentContainerStyle={styles.yearRow}>
+            {yearOptions.map((year) => {
+              const active = selectedYear === year;
+              return (
+                <TouchableOpacity
+                  key={year}
+                  style={[styles.yearChip, active && styles.yearChipActive]}
+                  onPress={() => setSelectedYear(year)}
+                  activeOpacity={0.75}>
+                  <Text
+                    style={[styles.yearChipText, active && styles.yearChipTextActive]}>
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading analytics...</Text>
-          </View>
-        ) : !analyticsData ? (
-          <View style={styles.centered}>
-            <Icon name="chart-bar" size={64} color={COLORS.border} />
-            <Text style={styles.emptyText}>No data available</Text>
+            <Text style={styles.loadingText}>Loading…</Text>
           </View>
         ) : (
           <>
-            {/* Summary Cards */}
-            <View style={styles.summaryRow}>
-              <Surface style={[styles.summaryCard, { backgroundColor: COLORS.primary }]} elevation={3}>
-                <Icon name="cash" size={28} color="rgba(255,255,255,0.4)" />
-                <Text variant="bodySmall" style={styles.summaryLabel}>
-                  Year Total
-                </Text>
-                <Text variant="titleMedium" style={styles.summaryValue}>
-                  {formatCurrency(analyticsData.yearTotal)}
-                </Text>
-              </Surface>
+            <View style={styles.section}>
+              <Text variant="labelLarge" style={styles.sectionLabel}>
+                Budgets
+              </Text>
 
-              <Surface style={[styles.summaryCard, { backgroundColor: '#00B894' }]} elevation={3}>
-                <Icon name="trending-up" size={28} color="rgba(255,255,255,0.4)" />
-                <Text variant="bodySmall" style={styles.summaryLabel}>
-                  Highest Month
-                </Text>
-                <Text variant="titleMedium" style={styles.summaryValue}>
-                  {highestMonth?.label || '-'}
-                </Text>
-                <Text variant="bodySmall" style={styles.summarySubValue}>
-                  {highestMonth ? formatCurrency(highestMonth.total) : ''}
-                </Text>
-              </Surface>
+              {budgets.length === 0 ? (
+                <Surface style={styles.emptyBudgetsCard} elevation={1}>
+                  <Icon name="wallet-plus-outline" size={40} color={COLORS.textSecondary} />
+                  <Text variant="titleSmall" style={styles.emptyBudgetsTitle}>
+                    No budgets yet
+                  </Text>
+                  <Text variant="bodySmall" style={styles.emptyBudgetsSub}>
+                    Create budgets on the Budgets tab to track limits and what is left.
+                  </Text>
+                </Surface>
+              ) : (
+                budgets.map((b) => {
+                    const limit = Number(b.budget) || 0;
+                    const spent = Number(b.spent) || 0;
+                    const left =
+                      b.remaining !== undefined && b.remaining !== null
+                        ? Number(b.remaining)
+                        : limit - spent;
+                    const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+                    return (
+                      <Surface key={b._id} style={styles.budgetRowCard} elevation={2}>
+                        <View style={styles.budgetRowTop}>
+                          <View style={styles.budgetRowIcon}>
+                            <Icon name="chart-pie" size={20} color={COLORS.primary} />
+                          </View>
+                          <View style={styles.budgetRowTitleBlock}>
+                            <Text variant="titleSmall" style={styles.budgetRowName} numberOfLines={1}>
+                              {b.name}
+                            </Text>
+                            <Text variant="bodySmall" style={styles.budgetRowMeta}>
+                              {b.expenseCount || 0} expense{(b.expenseCount || 0) !== 1 ? 's' : ''}
+                            </Text>
+                          </View>
+                          <View style={styles.budgetRowRemaining}>
+                            <Text style={styles.budgetRowRemainingLabel}>Left</Text>
+                            <Text
+                              style={[
+                                styles.budgetRowRemainingValue,
+                                { color: remainingColor(left) },
+                              ]}>
+                              {formatCurrency(left)}
+                            </Text>
+                          </View>
+                        </View>
+                        {limit > 0 ? (
+                          <View style={styles.progressTrack}>
+                            <View style={[styles.progressFill, { width: `${pct}%` }]} />
+                          </View>
+                        ) : null}
+                        <View style={styles.budgetRowStats}>
+                          <View style={styles.budgetRowStat}>
+                            <Text style={styles.budgetRowStatLabel}>Limit</Text>
+                            <Text style={styles.budgetRowStatValue}>{formatCurrency(limit)}</Text>
+                          </View>
+                          <View style={styles.budgetRowStat}>
+                            <Text style={styles.budgetRowStatLabel}>Spent</Text>
+                            <Text style={styles.budgetRowStatValue}>{formatCurrency(spent)}</Text>
+                          </View>
+                        </View>
+                      </Surface>
+                    );
+                  })
+              )}
             </View>
 
-            {/* Bar Chart */}
-            <Surface style={styles.chartCard} elevation={2}>
-              <Text variant="titleSmall" style={styles.chartTitle}>
-                Monthly Spending — {selectedYear}
-              </Text>
-              {chartData && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <BarChart
-                    data={chartData}
-                    width={Math.max(screenWidth - 48, MONTH_SHORT.length * 55)}
-                    height={260}
-                    yAxisLabel="₹"
-                    yAxisSuffix=""
-                    fromZero
-                    showValuesOnTopOfBars
-                    chartConfig={{
-                      backgroundColor: COLORS.surface,
-                      backgroundGradientFrom: COLORS.surface,
-                      backgroundGradientTo: COLORS.surface,
-                      decimalPlaces: 0,
-                      color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
-                      labelColor: () => COLORS.textSecondary,
-                      barPercentage: 0.5,
-                      propsForBackgroundLines: {
-                        strokeDasharray: '4 4',
-                        stroke: COLORS.border,
-                      },
-                      propsForLabels: {
-                        fontSize: 10,
-                      },
-                    }}
-                    style={styles.chart}
-                  />
-                </ScrollView>
-              )}
-            </Surface>
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Icon name="chart-bar" size={22} color={COLORS.primary} />
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Spending in {selectedYear}
+                </Text>
+              </View>
 
-            {/* Monthly Breakdown */}
-            <Surface style={styles.breakdownCard} elevation={2}>
-              <Text variant="titleSmall" style={styles.breakdownTitle}>
-                Monthly Breakdown
-              </Text>
-              {analyticsData.data.map((month) => (
-                <View key={month.month} style={styles.breakdownRow}>
-                  <Text variant="bodyMedium" style={styles.breakdownMonth}>
-                    {month.label}
+              {!analyticsData ? (
+                <Surface style={styles.emptyBudgetsCard} elevation={1}>
+                  <Text variant="bodyMedium" style={styles.emptyBudgetsSub}>
+                    Could not load yearly totals.
                   </Text>
-                  <View style={styles.breakdownBarWrap}>
-                    <View
-                      style={[
-                        styles.breakdownBar,
-                        {
-                          width: analyticsData.yearTotal > 0
-                            ? `${(month.total / analyticsData.yearTotal) * 100}%`
-                            : '0%',
-                        },
-                      ]}
-                    />
+                </Surface>
+              ) : (
+                <>
+                  <View style={styles.yearSummaryRow}>
+                    <Surface style={[styles.yearSummaryCard, styles.yearSummaryPrimary]} elevation={3}>
+                      <Icon name="calendar-star" size={24} color="rgba(255,255,255,0.35)" />
+                      <Text style={styles.yearSummaryLabel}>Year total</Text>
+                      <Text style={styles.yearSummaryValue}>
+                        {formatCurrency(analyticsData.yearTotal)}
+                      </Text>
+                    </Surface>
+                    <Surface style={[styles.yearSummaryCard, styles.yearSummaryAccent]} elevation={3}>
+                      <Icon name="trophy-outline" size={24} color="rgba(255,255,255,0.35)" />
+                      <Text style={styles.yearSummaryLabel}>Peak month</Text>
+                      <Text style={styles.yearSummaryValue} numberOfLines={1}>
+                        {highestMonth?.label ?? '—'}
+                      </Text>
+                      <Text style={styles.yearSummarySub}>
+                        {highestMonth ? formatCurrency(highestMonth.total) : ''}
+                      </Text>
+                    </Surface>
                   </View>
-                  <Text variant="bodySmall" style={styles.breakdownAmount}>
-                    {formatCurrency(month.total)}
-                  </Text>
-                </View>
-              ))}
-            </Surface>
+
+                  <Surface style={styles.chartCard} elevation={2}>
+                    <Text variant="titleSmall" style={styles.chartTitle}>
+                      By month
+                    </Text>
+                    {chartData && (
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <BarChart
+                          data={chartData}
+                          width={Math.max(screenWidth - 48, MONTH_SHORT.length * 55)}
+                          height={240}
+                          yAxisLabel="₹"
+                          yAxisSuffix=""
+                          fromZero
+                          showValuesOnTopOfBars
+                          chartConfig={{
+                            backgroundColor: COLORS.surface,
+                            backgroundGradientFrom: COLORS.surface,
+                            backgroundGradientTo: COLORS.surface,
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(108, 99, 255, ${opacity})`,
+                            labelColor: () => COLORS.textSecondary,
+                            barPercentage: 0.55,
+                            propsForBackgroundLines: {
+                              strokeDasharray: '4 4',
+                              stroke: COLORS.border,
+                            },
+                            propsForLabels: { fontSize: 10 },
+                          }}
+                          style={styles.chart}
+                        />
+                      </ScrollView>
+                    )}
+                  </Surface>
+
+                  <Surface style={styles.breakdownCard} elevation={2}>
+                    <Text variant="titleSmall" style={styles.breakdownTitle}>
+                      Month by month
+                    </Text>
+                    {analyticsData.data.map((month) => (
+                      <View key={month.month} style={styles.breakdownRow}>
+                        <Text variant="bodyMedium" style={styles.breakdownMonth}>
+                          {month.label}
+                        </Text>
+                        <View style={styles.breakdownBarWrap}>
+                          <View
+                            style={[
+                              styles.breakdownBar,
+                              {
+                                width:
+                                  analyticsData.yearTotal > 0
+                                    ? `${(month.total / analyticsData.yearTotal) * 100}%`
+                                    : '0%',
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text variant="bodySmall" style={styles.breakdownAmount}>
+                          {formatCurrency(month.total)}
+                        </Text>
+                      </View>
+                    ))}
+                  </Surface>
+                </>
+              )}
+            </View>
           </>
         )}
       </ScrollView>
@@ -224,118 +301,243 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 56 : 16,
-    paddingBottom: 8,
+    paddingTop: Platform.OS === 'ios' ? 8 : 16,
+    paddingBottom: 12,
     backgroundColor: COLORS.background,
   },
   headerTitle: {
     fontWeight: '700',
     color: COLORS.text,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 6,
+    lineHeight: 20,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
-  yearSelector: {
+  section: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
-  yearLabel: {
+  sectionLabel: {
+    color: COLORS.textSecondary,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontSize: 11,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontWeight: '700',
     color: COLORS.text,
-    fontWeight: '600',
-    marginBottom: 8,
   },
-  yearChips: {
+  yearRow: {
+    flexDirection: 'row',
     gap: 8,
+    paddingVertical: 2,
   },
   yearChip: {
-    backgroundColor: COLORS.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
   yearChipActive: {
     backgroundColor: COLORS.primary,
+    elevation: 3,
   },
   yearChipText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.textSecondary,
   },
   yearChipTextActive: {
     color: '#FFFFFF',
   },
   centered: {
-    paddingVertical: 80,
+    paddingVertical: 64,
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 12,
     color: COLORS.textSecondary,
   },
-  emptyText: {
+  emptyBudgetsCard: {
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    padding: 28,
+    alignItems: 'center',
+  },
+  emptyBudgetsTitle: {
     marginTop: 12,
-    color: COLORS.textSecondary,
-    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 16,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  summaryLabel: {
-    color: 'rgba(255,255,255,0.7)',
+  emptyBudgetsSub: {
     marginTop: 8,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  summaryValue: {
-    color: '#FFFFFF',
+  budgetRowCard: {
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    padding: 14,
+    marginBottom: 10,
+  },
+  budgetRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  budgetRowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  budgetRowTitleBlock: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  budgetRowName: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  budgetRowMeta: {
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  budgetRowRemaining: {
+    alignItems: 'flex-end',
+    marginLeft: 8,
+  },
+  budgetRowRemainingLabel: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+  },
+  budgetRowRemainingValue: {
+    fontSize: 16,
     fontWeight: '700',
     marginTop: 2,
   },
-  summarySubValue: {
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 2,
+  progressTrack: {
+    height: 6,
+    backgroundColor: COLORS.background,
+    borderRadius: 3,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 3,
+    maxWidth: '100%',
+  },
+  budgetRowStats: {
+    flexDirection: 'row',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+    justifyContent: 'space-between',
+  },
+  budgetRowStat: {
+    flex: 1,
+  },
+  budgetRowStatLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  budgetRowStatValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  yearSummaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  yearSummaryCard: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    minHeight: 112,
+  },
+  yearSummaryPrimary: {
+    backgroundColor: COLORS.primary,
+  },
+  yearSummaryAccent: {
+    backgroundColor: COLORS.secondary,
+  },
+  yearSummaryLabel: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    marginTop: 10,
+    fontWeight: '500',
+  },
+  yearSummaryValue: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  yearSummarySub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    marginTop: 4,
   },
   chartCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     padding: 16,
+    marginBottom: 16,
   },
   chartTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 12,
   },
   chart: {
-    borderRadius: 12,
+    borderRadius: 14,
   },
   breakdownCard: {
-    marginHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     padding: 16,
   },
   breakdownTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   breakdownRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   breakdownMonth: {
-    width: 36,
+    width: 38,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 12,
   },
   breakdownBarWrap: {
@@ -343,7 +545,7 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: COLORS.background,
     borderRadius: 4,
-    marginHorizontal: 8,
+    marginHorizontal: 10,
     overflow: 'hidden',
   },
   breakdownBar: {
@@ -352,11 +554,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   breakdownAmount: {
-    width: 70,
+    width: 76,
     textAlign: 'right',
     color: COLORS.text,
-    fontWeight: '600',
-    fontSize: 11,
+    fontWeight: '700',
+    fontSize: 12,
   },
 });
 

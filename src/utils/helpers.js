@@ -1,15 +1,5 @@
-import { MONTHS } from './constants';
-
 export const formatCurrency = (amount) => {
   return `₹${amount.toLocaleString('en-IN')}`;
-};
-
-export const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const day = date.getDate();
-  const month = MONTHS[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
 };
 
 export const formatDateShort = (dateString) => {
@@ -31,34 +21,4 @@ export const getYearOptions = () => {
     years.push(y);
   }
   return years;
-};
-
-// Group expenses by date for tree view
-export const groupExpensesByDate = (expenses) => {
-  const grouped = {};
-  expenses.forEach((expense) => {
-    const date = new Date(expense.date);
-    const key = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
-    if (!grouped[key]) {
-      grouped[key] = { expenses: [], total: 0 };
-    }
-    grouped[key].expenses.push(expense);
-    grouped[key].total += expense.amount;
-  });
-  return grouped;
-};
-
-// Group expenses by month for tree view
-export const groupExpensesByMonth = (expenses) => {
-  const grouped = {};
-  expenses.forEach((expense) => {
-    const date = new Date(expense.date);
-    const key = `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
-    if (!grouped[key]) {
-      grouped[key] = { expenses: [], total: 0 };
-    }
-    grouped[key].expenses.push(expense);
-    grouped[key].total += expense.amount;
-  });
-  return grouped;
 };

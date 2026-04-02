@@ -11,15 +11,16 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import AddExpenseScreen from '../screens/AddExpenseScreen';
-import TreeViewScreen from '../screens/TreeViewScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import GroupsScreen from '../screens/GroupsScreen';
+import GroupDetailScreen from '../screens/GroupDetailScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   Home: 'home',
-  TreeView: 'file-tree',
+  Budgets: 'wallet-outline',
   Analytics: 'chart-bar',
 };
 
@@ -36,7 +37,7 @@ const MainTabs = () => (
       headerShown: false,
     })}>
     <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Expenses' }} />
-    <Tab.Screen name="TreeView" component={TreeViewScreen} options={{ title: 'Tree View' }} />
+    <Tab.Screen name="Budgets" component={GroupsScreen} options={{ title: 'Budgets' }} />
     <Tab.Screen name="Analytics" component={AnalyticsScreen} options={{ title: 'Analytics' }} />
   </Tab.Navigator>
 );
@@ -58,10 +59,8 @@ const AppNavigator = () => {
         {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
-            <Stack.Screen
-              name="AddExpense"
-              component={AddExpenseScreen}
-            />
+            <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
+            <Stack.Screen name="BudgetDetail" component={GroupDetailScreen} />
           </>
         ) : (
           <>

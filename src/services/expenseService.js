@@ -1,16 +1,20 @@
 import api from './api';
 
-export const getExpenses = async (month, year) => {
+export const getExpenses = async (month, year, groupId) => {
   const params = {};
   if (month) params.month = month;
   if (year) params.year = year;
+  if (groupId !== undefined && groupId !== null && groupId !== '') {
+    params.groupId = groupId;
+  }
   const response = await api.get('/expenses', { params });
   return response.data;
 };
 
-export const createExpense = async (title, amount, date) => {
+export const createExpense = async (title, amount, date, groupId) => {
   const body = { title, amount };
   if (date) body.date = date;
+  if (groupId) body.group = groupId;
   const response = await api.post('/expenses', body);
   return response.data;
 };
