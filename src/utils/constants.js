@@ -8,10 +8,10 @@ import { Platform } from 'react-native';
 // };
 
 //railway api 
-// const API_URL = 'https://expensetrackerbackend-production-2480.up.railway.app/api'
+const API_URL = 'https://expensetrackerbackend-production-2480.up.railway.app/api'
 
 //localhost api
-const API_URL = 'http://localhost:5000/api'
+// const API_URL = 'http://localhost:5000/api'
 
 export const BASE_URL = API_URL;
 
